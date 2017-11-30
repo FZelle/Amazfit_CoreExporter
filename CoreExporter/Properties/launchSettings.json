@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "CoreExporter": {
+      "commandName": "Project",
+      "commandLineArgs": "D:\\tmp\\AmazfitExport\\db\\companion-aa.db b:\\temp"
+    }
+  }
+}
