@@ -103,138 +103,47 @@ namespace CoreExporter.Data
         public int synced { get; set; }
         public int trackid { get; set; }
         public int version { get; set; }
-        public string[] longitudelatitudeArray
-        {
-            get
-            {
-                if (string.IsNullOrWhiteSpace(longitude_latitude))
-                    return new string[0];
-                return longitude_latitude.Split(';');
-            }
-        }
         public List<LonLat> GPSCoordinates
         {
             get
             {
-                if( m_GPSCoordinates!=null)
-                    return m_GPSCoordinates;
-
-                if (longitudelatitudeArray?.Length > 0)
-                {
-                    var retval = new List<LonLat>();
-                    LonLat lastRecord = new LonLat();
-                    foreach (var item in longitudelatitudeArray)
-                    {
-                        var tuple = item.Split(',');
-                        try
-                        {
-                            double value = 0.0;
-                            if (double.TryParse(tuple[1], out value))
-                                lastRecord.Longitude = lastRecord.Longitude + value / 100000000.0;
-                            if (double.TryParse(tuple[0], out value))
-                                lastRecord.Latitude = lastRecord.Latitude + value / 100000000.0;
-                            retval.Add(lastRecord);
-                        }
-                        catch (Exception)
-                        {
-                        }
-                    }
-                    m_GPSCoordinates = retval;
-                    return retval;
-                }
-                return null;
+                m_GPSCoordinates = m_GPSCoordinates ?? GenerateGPSCoordinatesList();
+                return m_GPSCoordinates;
             }
         }
+
         List<LonLat> m_GPSCoordinates;
+        List<int> m_TimeList;
+        List<double> m_AltitudeList;
+        List<int> m_HeartRateList;
+        List<double> m_DistanceList;
 
         public List<double> AltitudeList
         {
             get
             {
-                if( m_AltitudeList!=null)
-                    return m_AltitudeList;
-                var list = new List<double>();
-                if(heart_rate!= null)
-                {
-                    double firstValid = 0.0;
-                    foreach (var item in altitude.Split(';'))
-                    {
-                        double value = 0.0;
-                        if (double.TryParse(item, out value))
-                        {
-                            value /= 100.0;
-                            if (value > 0.0)
-                                firstValid = value;
-                            list.Add(value);
-                        }
-                        else
-                            list.Add(0);
-                    }
-                    for (int i = 0; i < list.Count; i++)
-                    {
-                        if (list[i] <= 0.0)
-                            list[i] = firstValid;
-                    }
-                }
-                m_AltitudeList = list;
-                return list;
+                m_AltitudeList= m_AltitudeList ?? GenerateAltitudeList();
+                return m_AltitudeList;
             }
         }
-        List<double> m_AltitudeList;
         public List<double> DistanceList
         {
             get
             {
-                if( m_DistanceList!=null)
-                    return m_DistanceList;
-
-                var list = new List<double>();
-                if (distance != null)
-                {
-                    foreach (var item in distance.Split(';'))
-                    {
-                        double value = 0.0;
-                        if (double.TryParse(item.Split(',')[1], out value))
-                        {
-                            list.Add(value);
-                        }
-                        else
-                            list.Add(0);
-                    }
-                }
-                m_DistanceList = list;
-                return list;
+                m_DistanceList = m_DistanceList ?? GenerateDistanceList();
+                return m_DistanceList;
             }
         }
-        List<double> m_DistanceList;
+
         public List<int> HeartRateList
         {
             get
             {
-                if( m_HeartRateList!=null)
-                    return m_HeartRateList;
-                var list = new List<int>();
-                if (distance != null)
-                {
-                    int startValue = 0;
-                    
-                    foreach (var item in heart_rate.Split(';'))
-                    {
-                        int value = 0;
-                        if (int.TryParse(item.Split(',')[1], out value))
-                        {
-                            startValue += value;
-                            list.Add(startValue);
-                        }
-                        else
-                            list.Add(0);
-                    }
-                }
-                m_HeartRateList  = list;
-                return list;
+                m_HeartRateList = m_HeartRateList ?? GenereateHeartrateList();
+                return m_HeartRateList;
             }
         }
-        List<int> m_HeartRateList;
+
         public double Distance
         {
             get
@@ -246,28 +155,129 @@ namespace CoreExporter.Data
         {
             get
             {
-                if( m_TimeList!=null)
-                    return m_TimeList;
-                var list = new List<int>();
-                if (distance != null)
-                {
-                    foreach (var item in time.Split(';'))
-                    {
-                        int value = 0;
-                        if (int.TryParse(item, out value))
-                        {
-                            list.Add(value);
-                        }
-                        else
-                            list.Add(0);
-                    }
-                }
-                m_TimeList = list;
-                return list;
+                m_TimeList = m_TimeList ?? GenerateTimeList();
+                return m_TimeList;
             }
         }
-        List<int> m_TimeList;
 
+
+        private List<double> GenerateAltitudeList()
+        {
+            var list = new List<double>();
+            if (heart_rate != null)
+            {
+                double firstValid = 0.0;
+                foreach (var item in altitude.Split(';'))
+                {
+                    double value = 0.0;
+                    if (double.TryParse(item, out value))
+                    {
+                        value /= 100.0;
+                        if (value > 0.0)
+                            firstValid = value;
+                        list.Add(value);
+                    }
+                    else
+                        list.Add(0);
+                }
+                for (int i = 0; i < list.Count; i++)
+                {
+                    if (list[i] <= 0.0)
+                        list[i] = firstValid;
+                }
+            }
+            return list;
+        }
+
+        private List<int> GenereateHeartrateList()
+        {
+            var list = new List<int>();
+            if (distance != null)
+            {
+                int startValue = 0;
+
+                foreach (var item in heart_rate.Split(';'))
+                {
+                    int value = 0;
+                    if (int.TryParse(item.Split(',')[1], out value))
+                    {
+                        startValue += value;
+                        list.Add(startValue);
+                    }
+                    else
+                        list.Add(0);
+                }
+            }
+            return list;
+        }
+
+        private List<int> GenerateTimeList()
+        {
+            var list = new List<int>();
+            if (distance != null)
+            {
+                foreach (var item in time.Split(';'))
+                {
+                    int value = 0;
+                    if (int.TryParse(item, out value))
+                    {
+                        list.Add(value);
+                    }
+                    else
+                        list.Add(0);
+                }
+            }
+            return list;
+        }
+        private List<double> GenerateDistanceList()
+        {
+            var list = new List<double>();
+            if (distance != null)
+            {
+                foreach (var item in distance.Split(';'))
+                {
+                    double value = 0.0;
+                    if (double.TryParse(item.Split(',')[1], out value))
+                    {
+                        list.Add(value);
+                    }
+                    else
+                        list.Add(0);
+                }
+            }
+            return list;
+        }
+        private List<LonLat> GenerateGPSCoordinatesList()
+        {
+            if (string.IsNullOrWhiteSpace(longitude_latitude))
+                return new List<LonLat>();
+
+            string[] longitudelatitudeArray = longitude_latitude.Split(';');
+
+            if (longitudelatitudeArray?.Length > 0)
+            {
+                var list = new List<LonLat>();
+                LonLat lastRecord = new LonLat();
+                foreach (var item in longitudelatitudeArray)
+                {
+                    var tuple = item.Split(',');
+                    try
+                    {
+                        double value = 0.0;
+                        if (double.TryParse(tuple[1], out value))
+                            lastRecord.Longitude = lastRecord.Longitude + value / 100000000.0;
+                        if (double.TryParse(tuple[0], out value))
+                            lastRecord.Latitude = lastRecord.Latitude + value / 100000000.0;
+                        list.Add(lastRecord);
+                    }
+                    catch (Exception)
+                    {
+                    }
+                }
+                return list;
+            }
+            return new List<LonLat>();
+        }
     }
     public struct LonLat
     {
