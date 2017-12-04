@@ -30,11 +30,17 @@ namespace CoreExporter
                 {
                     Console.WriteLine($"ID: {item.Id} trackid: {item.trackid} Starttime:{item.StartDateTime} EndTime: {item.EndDateTime} gps:{item.SportDetail.GPSCoordinates.Count}");
 
-                    if(( item.SportDetail.GPSCoordinates.Count!= item.SportDetail.DistanceList.Count)/*|| (item.SportDetail.GPSCoordinates.Count != item.SportDetail.HeartRateList.Count)*/)
+                    if(( item.SportDetail.GPSCoordinates.Count!= item.SportDetail.TimeList.Count))
                     {
-                        Console.WriteLine("GpsCoordinates and distances/heartrate don't correlate");
+                        Console.WriteLine("GpsCoordinates and TimeList don't correlate");
                         continue;
                     }
+                    // if(( item.SportDetail.GPSCoordinates.Count!= item.SportDetail.DistanceList.Count))
+                    // {
+                    //     Console.WriteLine("GpsCoordinates and distances/heartrate don't correlate");
+                    //     continue;
+                    // }
+
                     StringBuilder sb = new StringBuilder("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n");
                     sb.AppendLine("<TrainingCenterDatabase version=\"1.0\" creator=\"CoreExporter by FZelle\" xsi:schemaLocation=\"http://www.garmin.com/xmlschemas/TrainingCenterDatabase/v2 http://www.garmin.com/xmlschemas/TrainingCenterDatabasev2.xsd\" xmlns:ns5=\"http://www.garmin.com/xmlschemas/ActivityGoals/v1\" xmlns:ns3=\"http://www.garmin.com/xmlschemas/ActivityExtension/v2\" xmlns:ns2=\"http://www.garmin.com/xmlschemas/UserProfile/v2\" xmlns=\"http://www.garmin.com/xmlschemas/TrainingCenterDatabase/v2\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:ns4=\"http://www.garmin.com/xmlschemas/ProfileExtension/v1\">");
                     sb.AppendLine("  <Activities>");
@@ -48,23 +54,28 @@ namespace CoreExporter
                     sb.AppendLine($"        <AverageHeartRateBpm><Value>{item.avg_heart_rate}</Value></AverageHeartRateBpm>");
                     sb.AppendLine($"        <MaximumHeartRateBpm><Value>{item.MaxHeartRate}</Value></MaximumHeartRateBpm>");
                     sb.AppendLine($"        <Track>");
-                    DateTime startTime = item.StartDateTime;
-                    double distance = 0.0;
+                    int timePoint = 0;
                     for (int i = 0; i < item.SportDetail.GPSCoordinates.Count; i++)
                     {
                         sb.AppendLine($"          <Trackpoint>");
-                        startTime = startTime.AddSeconds(item.SportDetail.TimeList[i]);
+                        timePoint += item.SportDetail.TimeList[i];
+                        var startTime = item.StartDateTime.AddSeconds(timePoint);
                         sb.AppendLine($"            <Time>{startTime:yyyy-MM-ddTHH:mm:ss.fffZ}</Time>");
-                        sb.AppendLine($"            <DistanceMeters>{distance.ToString(CultureInfo.InvariantCulture)}</DistanceMeters>");
-                        distance += item.SportDetail.DistanceList[i];
+                        if( item.SportDetail.DistanceList.ContainsKey(timePoint))
+                        {
+                            sb.AppendLine($"            <DistanceMeters>{item.SportDetail.DistanceList[timePoint].ToString(CultureInfo.InvariantCulture)}</DistanceMeters>");
+                        }
                         sb.AppendLine($"            <AltitudeMeters>{item.SportDetail.AltitudeList[i].ToString(CultureInfo.InvariantCulture)}</AltitudeMeters>");
                         sb.AppendLine($"            <Position>");
                         sb.AppendLine($"              <LatitudeDegrees>{item.SportDetail.GPSCoordinates[i].Latitude.ToString(CultureInfo.InvariantCulture)}</LatitudeDegrees>");
                         sb.AppendLine($"              <LongitudeDegrees>{item.SportDetail.GPSCoordinates[i].Longitude.ToString(CultureInfo.InvariantCulture)}</LongitudeDegrees>");
                         sb.AppendLine($"            </Position>");
-                        //sb.AppendLine($"            <HeartRateBpm>");
-                        //sb.AppendLine($"              <Value>{item.SportDetail.HeartRateList[i]}</Value>");
-                        //sb.AppendLine($"            </HeartRateBpm>");
+                        if(item.SportDetail.HeartRateList.ContainsKey(timePoint))
+                        {
+                            sb.AppendLine($"            <HeartRateBpm>");
+                            sb.AppendLine($"              <Value>{item.SportDetail.HeartRateList[timePoint]}</Value>");
+                            sb.AppendLine($"            </HeartRateBpm>");
+                        }
                         sb.AppendLine($"          </Trackpoint>");
                     }
                     sb.AppendLine("        </Track>");

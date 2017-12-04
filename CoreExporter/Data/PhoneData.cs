@@ -77,7 +77,7 @@ namespace CoreExporter.Data
         {
             get
             {
-                return SportDetail.HeartRateList.Max();
+                return SportDetail.HeartRateList.Values.Max();
             }
         }
         public SportDetail SportDetail { get; set; }
@@ -115,8 +115,8 @@ namespace CoreExporter.Data
         List<LonLat> m_GPSCoordinates;
         List<int> m_TimeList;
         List<double> m_AltitudeList;
-        List<int> m_HeartRateList;
-        List<double> m_DistanceList;
+        Dictionary<int,int> m_HeartRateList;
+        Dictionary<int,double> m_DistanceList;
 
         public List<double> AltitudeList
         {
@@ -126,7 +126,7 @@ namespace CoreExporter.Data
                 return m_AltitudeList;
             }
         }
-        public List<double> DistanceList
+        public Dictionary<int,double> DistanceList
         {
             get
             {
@@ -135,7 +135,7 @@ namespace CoreExporter.Data
             }
         }
 
-        public List<int> HeartRateList
+        public Dictionary<int,int> HeartRateList
         {
             get
             {
@@ -148,7 +148,7 @@ namespace CoreExporter.Data
         {
             get
             {
-                return DistanceList.Sum();
+                return DistanceList.Values.Max();
             }
         }
         public List<int> TimeList
@@ -189,23 +189,29 @@ namespace CoreExporter.Data
             return list;
         }
 
-        private List<int> GenereateHeartrateList()
+        private Dictionary<int,int> GenereateHeartrateList()
         {
-            var list = new List<int>();
+            var list = new Dictionary<int,int>();
             if (distance != null)
             {
-                int startValue = 0;
-
-                foreach (var item in heart_rate.Split(';'))
+                var hrList = heart_rate.Split(';');
+                int currentSec = 0;
+                int currentvalue = 0;
+                foreach (var item in hrList)
                 {
-                    int value = 0;
-                    if (int.TryParse(item.Split(',')[1], out value))
+                    var data = item.Split(',');
+                    int value = Convert.ToInt32(data[1]);
+                    int sec = Convert.ToInt32(data[0]);
+                    currentvalue += value;
+                    currentSec+=sec;
+                    if( list.ContainsKey(currentSec))
                     {
-                        startValue += value;
-                        list.Add(startValue);
+                         list[currentSec]=currentvalue;
                     }
                     else
-                        list.Add(0);
+                    {
+                        list.Add(currentSec,currentvalue);
+                    }
                 }
             }
             return list;
@@ -229,20 +235,28 @@ namespace CoreExporter.Data
             }
             return list;
         }
-        private List<double> GenerateDistanceList()
+        private Dictionary<int,double> GenerateDistanceList()
         {
-            var list = new List<double>();
+            int currentSec = 0;
+            int currentvalue = 0;
+            var list = new Dictionary<int,double>();
             if (distance != null)
             {
                 foreach (var item in distance.Split(';'))
                 {
-                    double value = 0.0;
-                    if (double.TryParse(item.Split(',')[1], out value))
+                    var data = item.Split(',');
+                    int value = Convert.ToInt32(data[1]);
+                    int sec = Convert.ToInt32(data[0]);
+                    currentvalue += value;
+                    currentSec+=sec;
+                    if( list.ContainsKey(currentSec))
                     {
-                        list.Add(value);
+                         list[currentSec]=currentvalue;
                     }
                     else
-                        list.Add(0);
+                    {
+                        list.Add(currentSec,currentvalue);
+                    }
                 }
             }
             return list;
